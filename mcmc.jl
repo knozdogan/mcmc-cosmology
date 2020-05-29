@@ -8,10 +8,10 @@ data,header = readdlm("./zH_chen_2017.dat",',';header=true);
 data_frame = DataFrame(z=data[:,1],H=data[:,2],Herr=data[:,3]);
 
 # define parameters
-dict = Dict{String,Tuple{Float64,Float64}}();
-dict["H_0"]=(50,80)     # (min,max)
-dict["Ω_m"]=(0,0.6)
-sample = Dict("H_0"=>65.0,"Ω_m"=>0.1)    # initial value
+params = Dict{String,Tuple{Float64,Float64}}();
+params["H_0"]=(50,80)     # (min,max)
+params["Ω_m"]=(0,0.6)
+init_val = Dict("H_0"=>65.0,"Ω_m"=>0.1)    # initial value
 
 
 # define ΛCDM model
@@ -20,8 +20,8 @@ model = ΛCDM;
 println("Model created")
 
 # prior, log likelihood, and log posterior
-params_name = collect(keys(dict));
-params_values = collect(values(dict));
+params_name = collect(keys(params));
+params_values = collect(values(params));
 
 dists = [Uniform(val[1],val[2]) for val in params_values];
 prior = product_distribution(dists);
@@ -37,8 +37,8 @@ end # function
 log_posterior(s::Dict) = log_likelihood(model,s) + logpdf(prior,collect(values(s)));
 
 # test
-println(log_likelihood(model,sample))
-println(log_posterior(sample))
+println(log_likelihood(model,init_val))
+println(log_posterior(init_val))
 
 # define Metropolis-Hasting algorithm
 # sample must be a dict
