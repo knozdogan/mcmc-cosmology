@@ -4,6 +4,7 @@ using Distributions
 using LinearAlgebra
 using PDMats
 using JLD
+# using Traceur
 
 cd(pwd());
 
@@ -17,7 +18,8 @@ params = Dict{String,Tuple{Float64,Float64}}();
 params["H_0"]=(60,75)     # (min,max)
 params["α"]=(2.4,3.3)
 params["η"]=(-0.04,0.02)
-init_val = Dict("H_0"=>68.0,"α"=>3.0,"η"=>0.0)    # initial value
+init_val = Dict{String, Float64}("H_0"=>68.0,"α"=>3.0,"η"=>0.0)    # initial value
+params_values = collect(values(params))
 
 ######################
 # Cosmological model #
@@ -50,7 +52,7 @@ function log_posterior(s::Dict)
     if isinf(log_prior)
         return -Inf
     else
-        return log_likelihood(model, s) + log_prior
+        return log_likelihood(s) + log_prior
     end
 end
 
@@ -63,7 +65,7 @@ println("> Statistical model defined")
     RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_in=1e3, step_size=1)
 
 """
-function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e8, burn_in=1e5, step_size=0.02)
+function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e6, burn_in=1e5, step_size=0.05)
     params_names = collect(keys(init_vals));
     θ_init = collect(values(init_vals))
     num_params = length(params_names);
@@ -77,8 +79,8 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e8, 
         progress_bar(i,overall_steps);
 
         θ_cand = rand(Q(θ_init))
-        cand_dict = Dict(params_names[i]=>θ_cand[i] for i in 1:num_params);
-        init_dict = Dict(params_names[i]=>θ_init[i] for i in 1:num_params);
+        cand_dict = Dict{String, Float64}(params_names[i]=>θ_cand[i] for i in 1:num_params);
+        init_dict = Dict{String, Float64}(params_names[i]=>θ_init[i] for i in 1:num_params);
 
         log_likelihood_ratio = ln_posterior(cand_dict) - ln_posterior(init_dict)
 
@@ -112,8 +114,8 @@ function add_sample(dict::Dict,sample::Array,key_names::Array)
 end # function
 
 function progress_bar(i,steps,update=100)
-    progress = i*100/steps
     if i%update==0
+        progress = i*100/steps
         print("> Running... $(round(Int,progress))%   \r")
     end
 end
@@ -121,5 +123,5 @@ end
 
 # test
 @time chains = RandomWalkMetropolisHastings(log_posterior,init_val);
-save("samples_$(model)_v4.jld", "samples", chains)
+save("samples_$(model).jld", "samples", chains)
 println("> Saved!")
