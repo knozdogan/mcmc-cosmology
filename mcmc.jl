@@ -1,6 +1,8 @@
 using DelimitedFiles
 using DataFrames
 using Distributions
+using LinearAlgebra
+using PDMats
 using JLD
 
 cd(pwd());
@@ -12,17 +14,21 @@ println("> Data loaded")
 
 # define parameters
 params = Dict{String,Tuple{Float64,Float64}}();
-params["H_0"]=(50,80)     # (min,max)
-params["Ω_m"]=(0.1,0.6)
-init_val = Dict("H_0"=>65.0,"Ω_m"=>0.2)    # initial value
-params_name = collect(keys(params));
-params_values = collect(values(params));
+params["H_0"]=(60,75)     # (min,max)
+params["α"]=(2.4,3.3)
+params["η"]=(-0.04,0.02)
+init_val = Dict("H_0"=>68.0,"α"=>3.0,"η"=>0.0)    # initial value
 
 ######################
 # Cosmological model #
 ######################
 @. ΛCDM(s::Dict) = s["H_0"] * sqrt(s["Ω_m"] * (1. + data_frame.z) ^ 3 + 1. - s["Ω_m"]);
-model = ΛCDM;
+function EMPG(s::Dict)
+    β = (1. + (2. * s["η"] * s["α"]) / (2. * s["η"] - 1.))^((2. * s["η"]-2.) / (2. * s["η"]-1.))
+    return @. s["H_0"] * sqrt((1. / (1. + s["α"])) * (β * (1. + data_frame.z)^3 + 1. - β) +
+                              (s["α"] / (1. + s["α"]))*(β * (1. + data_frame.z)^3 + 1. - β)^(2. * s["η"]))
+end # function
+model = EMPG;
 println("> Cosmological model $(model) created")
 
 #####################
@@ -34,7 +40,8 @@ prior = product_distribution(dists);    # prior distribution
 σ = data_frame.Herr;
 
 function log_likelihood(s::Dict)
-    gauss = MvNormal(model(s),σ)
+    μ = model(s)
+    gauss = MvNormal(μ, PDiagMat(abs2.(σ)))
     return logpdf(gauss,data_frame.H)
 end
 
@@ -43,7 +50,7 @@ function log_posterior(s::Dict)
     if isinf(log_prior)
         return -Inf
     else
-        return log_likelihood(s) + log_prior
+        return log_likelihood(model, s) + log_prior
     end
 end
 
@@ -56,13 +63,14 @@ println("> Statistical model defined")
     RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_in=1e3, step_size=1)
 
 """
-function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e6, burn_in=1e3, step_size=1)
+function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e8, burn_in=1e5, step_size=0.02)
     params_names = collect(keys(init_vals));
+    θ_init = collect(values(init_vals))
     num_params = length(params_names);
     samples = Dict{String, Vector{Float64}}();
 
-    Q(μ) = MvNormal(μ,step_size);   # proposal distribution
-    θ_init = rand(Q(collect(values(init_vals))));
+    step_var = step_size * ones(num_params);    # variance
+    Q(μ) = MvNormal(μ,step_var);   # proposal distribution
 
     overall_steps = steps+burn_in;
     for i in 1:overall_steps
@@ -72,8 +80,8 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e6, 
         cand_dict = Dict(params_names[i]=>θ_cand[i] for i in 1:num_params);
         init_dict = Dict(params_names[i]=>θ_init[i] for i in 1:num_params);
 
-        log_likelihood_ratio = logpdf(Q(θ_cand),θ_init) + ln_posterior(cand_dict) -
-                               logpdf(Q(θ_init), θ_cand) - ln_posterior(init_dict)
+        log_likelihood_ratio = ln_posterior(cand_dict) - ln_posterior(init_dict)
+
 
         log_α = min(0, log_likelihood_ratio);
         u = log(rand(Uniform(0,1)));
@@ -83,12 +91,14 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e6, 
                 add_sample(samples,θ_cand, params_names)
             end
             θ_init = θ_cand;
-        else
-            if i>burn_in
-                add_sample(samples,θ_init,params_names)
-            end
+        # else
+        #     if i>burn_in
+        #         add_sample(samples,θ_init,params_names)
+        #     end
         end # acceptance procedure
     end
+    println("> RW-MH..")
+    println(">> Acceptance Rate: $(length(samples[params_names[1]])/steps)")
     return samples
 end
 
@@ -101,7 +111,7 @@ function add_sample(dict::Dict,sample::Array,key_names::Array)
     end
 end # function
 
-function progress_bar(i::Int,steps::Int,update=100)
+function progress_bar(i,steps,update=100)
     progress = i*100/steps
     if i%update==0
         print("> Running... $(round(Int,progress))%   \r")
@@ -110,6 +120,6 @@ end
 
 
 # test
-chains = RandomWalkMetropolisHastings(log_posterior,init_val);
-save("samples.jld", "samples", chains)
+@time chains = RandomWalkMetropolisHastings(log_posterior,init_val);
+save("samples_$(model)_v4.jld", "samples", chains)
 println("> Saved!")
