@@ -1,7 +1,7 @@
 using DelimitedFiles
 using DataFrames
 using Distributions
-using HDF5, JLD
+using JLD
 
 cd(pwd());
 
@@ -33,9 +33,8 @@ prior = product_distribution(dists);    # prior distribution
 
 σ = data_frame.Herr;
 
-function log_likelihood(mdl,s)
-    μ = mdl(s);
-    gauss = MvNormal(μ,σ)
+function log_likelihood(s::Dict)
+    gauss = MvNormal(model(s),σ)
     return logpdf(gauss,data_frame.H)
 end
 
@@ -44,7 +43,7 @@ function log_posterior(s::Dict)
     if isinf(log_prior)
         return -Inf
     else
-        return log_likelihood(model,s) + log_prior
+        return log_likelihood(s) + log_prior
     end
 end
 
