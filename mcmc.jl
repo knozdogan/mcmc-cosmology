@@ -29,7 +29,7 @@ println("> Cosmological model $(model) created")
 # Statistical model #
 #####################
 dists = [Uniform(val[1],val[2]) for val in params_values];
-prior = product_distribution(dists);
+prior = product_distribution(dists);    # prior distribution
 
 σ = data_frame.Herr;
 
@@ -37,7 +37,7 @@ function log_likelihood(mdl,s)
     μ = mdl(s);
     gauss = MvNormal(μ,σ)
     return logpdf(gauss,data_frame.H)
-end # function
+end
 
 function log_posterior(s::Dict)
     log_prior = logpdf(prior,collect(values(s)));
@@ -45,7 +45,7 @@ function log_posterior(s::Dict)
         return -Inf
     else
         return log_likelihood(model,s) + log_prior
-    end # if
+    end
 end
 
 println("> Statistical model defined")
@@ -53,11 +53,16 @@ println("> Statistical model defined")
 ############################################
 # Random Walk Metropolis-Hasting algorithm #
 ############################################
+"""
+    RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_in=1e3, step_size=1)
+
+"""
 function RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_in=1e3, step_size=1)
     params_names = collect(keys(init_vals));
     num_params = length(params_names);
     samples = Dict{String, Vector{Float64}}();
-    Q(μ) = MvNormal(μ,step_size);
+
+    Q(μ) = MvNormal(μ,step_size);   # proposal distribution
     θ_init = rand(Q(collect(values(init_vals))));
 
     overall_steps = steps+burn_in;
@@ -83,7 +88,7 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_i
             if i>burn_in
                 add_sample(samples,θ_init,params_names)
             end
-        end # acceptance procudure
+        end # acceptance procedure
     end
     return samples
 end
