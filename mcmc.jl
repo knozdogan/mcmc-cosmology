@@ -16,21 +16,15 @@ println("> Data loaded")
 # define parameters
 params = Dict{String,Tuple{Float64,Float64}}();
 params["H_0"]=(60,75)     # (min,max)
-params["α"]=(2.4,3.3)
-params["η"]=(-0.04,0.02)
-init_val = Dict{String, Float64}("H_0"=>68.0,"α"=>3.0,"η"=>0.0)    # initial value
+params["Ω_m"]=(0.1,0.6)
+init_val = Dict{String, Float64}("H_0"=>65.0,"Ω_m"=>0.1)    # initial value
 params_values = collect(values(params))
 
 ######################
 # Cosmological model #
 ######################
 @. ΛCDM(s::Dict) = s["H_0"] * sqrt(s["Ω_m"] * (1. + data_frame.z) ^ 3 + 1. - s["Ω_m"]);
-function EMPG(s::Dict)
-    β = (1. + (2. * s["η"] * s["α"]) / (2. * s["η"] - 1.))^((2. * s["η"]-2.) / (2. * s["η"]-1.))
-    return @. s["H_0"] * sqrt((1. / (1. + s["α"])) * (β * (1. + data_frame.z)^3 + 1. - β) +
-                              (s["α"] / (1. + s["α"]))*(β * (1. + data_frame.z)^3 + 1. - β)^(2. * s["η"]))
-end # function
-model = EMPG;
+model = ΛCDM;
 println("> Cosmological model $(model) created")
 
 #####################
@@ -65,7 +59,7 @@ println("> Statistical model defined")
     RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_in=1e3, step_size=1)
 
 """
-function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e6, burn_in=1e5, step_size=0.05)
+function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e7, burn_in=1e4, step_size=0.05)
     params_names = collect(keys(init_vals));
     θ_init = collect(values(init_vals))
     num_params = length(params_names);
