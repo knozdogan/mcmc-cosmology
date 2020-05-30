@@ -56,7 +56,7 @@ println("> Statistical model defined")
     RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_in=1e3, step_size=1)
 
 """
-function RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_in=1e3, step_size=1)
+function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e6, burn_in=1e3, step_size=1)
     params_names = collect(keys(init_vals));
     num_params = length(params_names);
     samples = Dict{String, Vector{Float64}}();
@@ -93,7 +93,7 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals, steps=1e6, burn_i
 end
 
 # push sample to array in dict
-function add_sample(dict,sample,key_names)
+function add_sample(dict::Dict,sample::Array,key_names::Array)
     num_params = length(key_names)
     for i in 1:num_params
         vals = get!(Vector{Float64}, dict, key_names[i])
@@ -101,7 +101,7 @@ function add_sample(dict,sample,key_names)
     end
 end # function
 
-function progress_bar(i,steps,update=100)
+function progress_bar(i::Int,steps::Int,update=100)
     progress = i*100/steps
     if i%update==0
         print("> Running... $(round(Int,progress))%   \r")
