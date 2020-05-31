@@ -22,7 +22,7 @@ prior = product_distribution(...);    # prior distribution
 function log_likelihood(s::Dict)
     μ = model(s)
     gauss = MvNormal(μ, PDiagMat(abs2.(σ)))
-    return logpdf(gauss,...)
+    return logpdf(gauss,*your_data_arr*)
 end
 
 function log_posterior(s::Dict)
@@ -33,4 +33,18 @@ function log_posterior(s::Dict)
         return log_likelihood(s) + log_prior
     end
 end
+```
+
+Model parameters must follow this structure *Dict{String,Tuple{Float64,Float64}}()*.
+
+```julia
+params = Dict{String,Tuple{Float64,Float64}}();
+params["H_0"]=(60,75)     # (min,max)
+params["Ω_m"]=(0.1,0.6)
+```
+
+Also, you have to define initial values for *RandomWalkMetropolisHastings* function:
+
+```julia
+init_val = Dict{String, Float64}("H_0"=>65.0,"Ω_m"=>0.1)
 ```
