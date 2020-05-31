@@ -53,6 +53,11 @@ function corner_plot(data::Dict, plt_title::String, num_points=10000, num_bins=1
     end
     # plot_title: not currently implemented. see plots attributes on
     # https://docs.juliaplots.org/latest/generated/attributes_plot/
+
+    # layout design
+    # l = @layout [
+    #     a{0.1w} [grid(num_params,num_params)
+    #             b{0.1h}  ]]
     plot(plots..., layout=(num_params,num_params))
     savefig("./model_$(plt_title).png")
 end # function
