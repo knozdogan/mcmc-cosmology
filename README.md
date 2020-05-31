@@ -17,12 +17,12 @@ model = ΛCDM;
 Also you can define a statistical model by using this structure:
 
 ```julia
-prior = product_distribution(...);    # prior distribution
+prior = product_distribution(***);    # prior distribution
 
 function log_likelihood(s::Dict)
     μ = model(s)
     gauss = MvNormal(μ, PDiagMat(abs2.(σ)))
-    return logpdf(gauss,*your_data_arr*)
+    return logpdf(gauss,***)
 end
 
 function log_posterior(s::Dict)
@@ -48,3 +48,7 @@ Also, you have to define initial values for *RandomWalkMetropolisHastings* funct
 ```julia
 init_val = Dict{String, Float64}("H_0"=>65.0,"Ω_m"=>0.1)
 ```
+## Results
+Corner plots for ΛCDM model:
+
+![alt text](https://github.com/knozdogan/mcmc-cosmology/blob/master/model_%CE%9BCDM.png?raw=true)
