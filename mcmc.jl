@@ -65,7 +65,10 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e7, 
     num_params = length(params_names);
     samples = Dict{String, Vector{Float64}}();
 
-    step_var = step_size * ones(num_params);    # variance
+    key_names = copy(params_names)
+    push!(key_names, "$(ln_posterior)")
+
+    step_var = step_size * ones(Float64,num_params);    # variance
     Q(μ) = MvNormal(μ,step_var);   # proposal distribution
 
     overall_steps = steps+burn_in;
@@ -76,7 +79,8 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e7, 
         cand_dict = Dict{String, Float64}(params_names[i]=>θ_cand[i] for i in 1:num_params);
         init_dict = Dict{String, Float64}(params_names[i]=>θ_init[i] for i in 1:num_params);
 
-        log_likelihood_ratio = ln_posterior(cand_dict) - ln_posterior(init_dict)
+        log_post = ln_posterior(cand_dict)
+        log_likelihood_ratio = log_post - ln_posterior(init_dict)
 
 
         log_α = min(0, log_likelihood_ratio);
@@ -84,7 +88,9 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e7, 
 
         if u < log_α
             if i>burn_in
-                add_sample(samples,θ_cand, params_names)
+                data = copy(θ_cand)
+                push!(data, log_post)
+                add_arr_to_dict(samples, data, key_names)
             end
             θ_init = θ_cand;
         # else
@@ -99,7 +105,7 @@ function RandomWalkMetropolisHastings(ln_posterior, init_vals::Dict, steps=1e7, 
 end
 
 # push sample to array in dict
-function add_sample(dict::Dict,sample::Array,key_names::Array)
+function add_arr_to_dict(dict::Dict,sample::Array,key_names::Array)
     num_params = length(key_names)
     for i in 1:num_params
         vals = get!(Vector{Float64}, dict, key_names[i])
@@ -117,5 +123,5 @@ end
 
 # test
 @time chains = RandomWalkMetropolisHastings(log_posterior,init_val);
-save("samples_$(model).jld", "samples", chains)
+save("samples_$(model)_log.jld", "samples", chains)
 println("> Saved!")
