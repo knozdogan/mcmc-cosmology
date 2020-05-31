@@ -9,7 +9,7 @@ using JLD
 cd(pwd());
 
 # load data and create dataframe
-data,header = readdlm("./zH_chen_2017.dat",',';header=true);
+data,header = readdlm("./data/zH_chen_2017.dat",',';header=true);
 data_frame = DataFrame(z=data[:,1],H=data[:,2],Herr=data[:,3]);
 println("> Data loaded")
 
@@ -123,5 +123,5 @@ end
 
 # test
 @time chains = RandomWalkMetropolisHastings(log_posterior,init_val);
-save("samples_$(model)_log.jld", "samples", chains)
+save("./samples/samples_$(model)_log.jld", "samples", chains)
 println("> Saved!")

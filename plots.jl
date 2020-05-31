@@ -8,7 +8,7 @@ using Plots,
 import PyPlot
 pyplot();
 
-samples = load("./samples_ΛCDM.jld")["samples"]
+samples = load("./samples/samples_ΛCDM.jld")["samples"]
 println("> samples loaded")
 plt_title = "ΛCDM"
 
@@ -59,7 +59,7 @@ function corner_plot(data::Dict, plt_title::String, num_points=10000, num_bins=1
     #     a{0.1w} [grid(num_params,num_params)
     #             b{0.1h}  ]]
     plot(plots..., layout=(num_params,num_params))
-    savefig("./model_$(plt_title).png")
+    savefig("./plots/model_$(plt_title).png")
 end # function
 
 # test

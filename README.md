@@ -51,4 +51,4 @@ init_val = Dict{String, Float64}("H_0"=>65.0,"Ω_m"=>0.1)
 ## Results
 Corner plots for ΛCDM model:
 
-![alt text](https://github.com/knozdogan/mcmc-cosmology/blob/master/model_%CE%9BCDM.png?raw=true)
+![alt text](https://github.com/knozdogan/mcmc-cosmology/blob/master/plots/model_%CE%9BCDM.png?raw=true)
